@@ -1,0 +1,20 @@
+{
+  "name": "daily-market",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "bot": "bun run bot.ts",
+    "markets": "bun run index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "grammy": "^1.39.3"
+  }
+}
