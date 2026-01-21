@@ -26,7 +26,8 @@ db.exec(`
     clobTokenIdYes TEXT,
     clobTokenIdNo TEXT,
     analysis TEXT NOT NULL,
-    sentAt INTEGER NOT NULL
+    sentAt INTEGER NOT NULL,
+    alertType TEXT DEFAULT 'MOMENTUM'
   );
 
   CREATE TABLE IF NOT EXISTS users (
@@ -39,6 +40,12 @@ db.exec(`
     symbol TEXT NOT NULL,
     mutedAt INTEGER NOT NULL,
     PRIMARY KEY (chatId, symbol)
+  );
+  
+  CREATE TABLE IF NOT EXISTS direction_tracking (
+    symbol TEXT PRIMARY KEY,
+    lastDirection TEXT NOT NULL,
+    lastUpdated INTEGER NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_snapshots_symbol_time 
@@ -67,8 +74,8 @@ export const getSnapshotsLast30Min = db.prepare(`
 `);
 
 export const insertAlert = db.prepare(`
-  INSERT INTO alerts (symbol, changePerc, realPrice, polyYesPrice, polyNoPrice, clobTokenIdYes, clobTokenIdNo, analysis, sentAt)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO alerts (symbol, changePerc, realPrice, polyYesPrice, polyNoPrice, clobTokenIdYes, clobTokenIdNo, analysis, sentAt, alertType)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 export const getRecentAlerts = db.prepare(`
@@ -139,7 +146,8 @@ export function saveAlert(alert: Alert) {
     alert.clobTokenIdYes || null,
     alert.clobTokenIdNo || null,
     alert.analysis,
-    alert.sentAt
+    alert.sentAt,
+    alert.alertType || 'MOMENTUM'
   );
 }
 
@@ -179,4 +187,21 @@ export function getUserMutedAssets(chatId: number): string[] {
 export function isAssetMutedForUser(chatId: number, symbol: string): boolean {
   const result = isAssetMuted.get(chatId, symbol) as { count: number };
   return result.count > 0;
+}
+export const getLastDirection = db.prepare(`
+  SELECT * FROM direction_tracking WHERE symbol = ?
+`);
+
+export const setDirection = db.prepare(`
+  INSERT OR REPLACE INTO direction_tracking (symbol, lastDirection, lastUpdated)
+  VALUES (?, ?, ?)
+`);
+
+export function getLastDirectionForSymbol(symbol: string): string | null {
+  const result = getLastDirection.get(symbol) as { lastDirection: string } | undefined;
+  return result?.lastDirection || null;
+}
+
+export function saveDirection(symbol: string, direction: string) {
+  setDirection.run(symbol, direction, Date.now());
 }

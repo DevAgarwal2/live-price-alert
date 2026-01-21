@@ -38,16 +38,16 @@ export interface PriceSnapshot {
 }
 
 export interface Alert {
-  id?: number;
   symbol: string;
   changePerc: number;
   realPrice: number;
   polyYesPrice: number;
   polyNoPrice: number;
-  clobTokenIdYes?: string;
-  clobTokenIdNo?: string;
-  analysis: 'UNDERPRICED' | 'PRICED_IN';
+  clobTokenIdYes: string;
+  clobTokenIdNo: string;
+  analysis: string;
   sentAt: number;
+  alertType?: 'MOMENTUM' | 'DIRECTION_CHANGE'; // New field
 }
 
 export interface AssetData {

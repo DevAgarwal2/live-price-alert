@@ -1,4 +1,4 @@
-import { saveSnapshot, getSnapshotsForAlert, saveAlert, hasRecentAlert, getRecentAlerts } from '../database';
+import { saveSnapshot, getSnapshotsForAlert, saveAlert, hasRecentAlert, getRecentAlerts, getLastDirectionForSymbol, saveDirection } from '../database';
 import { fetchStockPrices, fetchGoldSilverPrices } from './realtime';
 import { fetchPolymarketData } from './polymarket';
 import { calculateValueAnalysis } from './analysis';
@@ -64,6 +64,62 @@ export function checkForAlerts(): Alert[] {
     const latest = snapshots[0];
     if (!latest) continue;
 
+    // ═══════════════════════════════════════════════════════════
+    // ALERT TYPE 1: DIRECTION CHANGE (UP vs DOWN from yesterday)
+    // ═══════════════════════════════════════════════════════════
+    const currentDirection = latest.changePerc >= 0 ? 'UP' : 'DOWN';
+    const lastDirection = getLastDirectionForSymbol(symbol);
+    
+    // Alert on direction change OR first check of the day
+    if (!lastDirection) {
+      // First check today - send alert about current direction
+      const analysis = calculateValueAnalysis(latest.changePerc, latest.polyYesPrice, latest.polyNoPrice);
+      
+      const directionAlert: Alert = {
+        symbol,
+        changePerc: latest.changePerc,
+        realPrice: latest.currentPrice,
+        polyYesPrice: latest.polyYesPrice,
+        polyNoPrice: latest.polyNoPrice,
+        clobTokenIdYes: latest.clobTokenIdYes || '',
+        clobTokenIdNo: latest.clobTokenIdNo || '',
+        analysis: analysis.yesStatus === 'UNDERPRICED' || analysis.noStatus === 'UNDERPRICED' ? 'UNDERPRICED' : 'PRICED_IN',
+        sentAt: Date.now(),
+        alertType: 'DIRECTION_CHANGE'
+      };
+      
+      alerts.push(directionAlert);
+      saveAlert(directionAlert);
+      console.log(`[🔄 DIRECTION] ${symbol} opened ${currentDirection === 'UP' ? 'ABOVE' : 'BELOW'} yesterday's close: ${latest.changePerc.toFixed(2)}%`);
+    } else if (lastDirection !== currentDirection) {
+      // Direction changed during the day
+      const analysis = calculateValueAnalysis(latest.changePerc, latest.polyYesPrice, latest.polyNoPrice);
+      
+      const directionAlert: Alert = {
+        symbol,
+        changePerc: latest.changePerc,
+        realPrice: latest.currentPrice,
+        polyYesPrice: latest.polyYesPrice,
+        polyNoPrice: latest.polyNoPrice,
+        clobTokenIdYes: latest.clobTokenIdYes || '',
+        clobTokenIdNo: latest.clobTokenIdNo || '',
+        analysis: analysis.yesStatus === 'UNDERPRICED' || analysis.noStatus === 'UNDERPRICED' ? 'UNDERPRICED' : 'PRICED_IN',
+        sentAt: Date.now(),
+        alertType: 'DIRECTION_CHANGE'
+      };
+      
+      alerts.push(directionAlert);
+      saveAlert(directionAlert);
+      console.log(`[🔄 DIRECTION] ${symbol} crossed ${currentDirection === 'UP' ? 'ABOVE' : 'BELOW'} yesterday's close: ${latest.changePerc.toFixed(2)}%`);
+    }
+    
+    // Update direction tracking
+    saveDirection(symbol, currentDirection);
+
+    // ═══════════════════════════════════════════════════════════
+    // ALERT TYPE 2: MOMENTUM (0.75%+ movement from last alert)
+    // ═══════════════════════════════════════════════════════════
+    
     // Check if movement is >= 0.75%
     if (Math.abs(latest.changePerc) < 0.75) continue;
 
@@ -80,10 +136,11 @@ export function checkForAlerts(): Alert[] {
         realPrice: latest.currentPrice,
         polyYesPrice: latest.polyYesPrice,
         polyNoPrice: latest.polyNoPrice,
-        clobTokenIdYes: latest.clobTokenIdYes,
-        clobTokenIdNo: latest.clobTokenIdNo,
+        clobTokenIdYes: latest.clobTokenIdYes || '',
+        clobTokenIdNo: latest.clobTokenIdNo || '',
         analysis: analysis.yesStatus === 'UNDERPRICED' || analysis.noStatus === 'UNDERPRICED' ? 'UNDERPRICED' : 'PRICED_IN',
-        sentAt: Date.now()
+        sentAt: Date.now(),
+        alertType: 'MOMENTUM'
       };
 
       alerts.push(alert);
@@ -114,10 +171,11 @@ export function checkForAlerts(): Alert[] {
           realPrice: latest.currentPrice,
           polyYesPrice: latest.polyYesPrice,
           polyNoPrice: latest.polyNoPrice,
-          clobTokenIdYes: latest.clobTokenIdYes,
-          clobTokenIdNo: latest.clobTokenIdNo,
+          clobTokenIdYes: latest.clobTokenIdYes || '',
+          clobTokenIdNo: latest.clobTokenIdNo || '',
           analysis: analysis.yesStatus === 'UNDERPRICED' || analysis.noStatus === 'UNDERPRICED' ? 'UNDERPRICED' : 'PRICED_IN',
-          sentAt: Date.now()
+          sentAt: Date.now(),
+          alertType: 'MOMENTUM'
         };
 
         alerts.push(alert);

@@ -10,7 +10,16 @@ export async function sendAlert(bot: Bot, alert: Alert): Promise<void> {
   
   const analysis = calculateValueAnalysis(alert.changePerc, alert.polyYesPrice, alert.polyNoPrice);
   
-  let message = `🔔 ${getAssetName(alert.symbol)} ${direction} ${formatPercentage(alert.changePerc)}\n`;
+  let message = '';
+  
+  // Different header for direction change alerts
+  if (alert.alertType === 'DIRECTION_CHANGE') {
+    const crossed = alert.changePerc >= 0 ? 'ABOVE ⬆️' : 'BELOW ⬇️';
+    message = `🔄 ${getAssetName(alert.symbol)} crossed **${crossed}** yesterday's close!\n`;
+  } else {
+    message = `🔔 ${getAssetName(alert.symbol)} ${direction} ${formatPercentage(alert.changePerc)}\n`;
+  }
+  
   message += `━━━━━━━━━━━━━━━━━\n\n`;
   
   message += `📈 MOMENTUM\n`;
