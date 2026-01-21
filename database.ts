@@ -74,6 +74,7 @@ export const insertAlert = db.prepare(`
 export const getRecentAlerts = db.prepare(`
   SELECT * FROM alerts 
   WHERE symbol = ? AND sentAt > ?
+  ORDER BY sentAt DESC
 `);
 
 export const addUser = db.prepare(`

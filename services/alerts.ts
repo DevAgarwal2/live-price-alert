@@ -87,11 +87,23 @@ export function checkForAlerts(): Alert[] {
       };
 
       alerts.push(alert);
-      saveAlert(alert);
+      try {
+        saveAlert(alert);
+        console.log(`[DEBUG] Saved first alert for ${symbol} at ${alert.changePerc.toFixed(2)}%`);
+      } catch (error) {
+        console.error(`[ERROR] Failed to save alert for ${symbol}:`, error);
+      }
     } else {
       // Already sent alerts - only send if change is >= 0.75% from LAST alert
       const lastAlert = allAlerts[0];
-      const changeSinceLastAlert = Math.abs(latest.changePerc - lastAlert.changePerc);
+      if (!lastAlert) continue; // Safety check
+      
+      // Round to 2 decimal places to avoid floating point precision issues
+      const currentChangeRounded = Math.round(latest.changePerc * 100) / 100;
+      const lastChangeRounded = Math.round(lastAlert.changePerc * 100) / 100;
+      const changeSinceLastAlert = Math.abs(currentChangeRounded - lastChangeRounded);
+      
+      console.log(`[DEBUG] ${symbol}: Current ${currentChangeRounded}% vs Last Alert ${lastChangeRounded}% = ${changeSinceLastAlert}% diff`);
       
       if (changeSinceLastAlert >= 0.75) {
         const analysis = calculateValueAnalysis(latest.changePerc, latest.polyYesPrice, latest.polyNoPrice);
@@ -109,7 +121,12 @@ export function checkForAlerts(): Alert[] {
         };
 
         alerts.push(alert);
-        saveAlert(alert);
+        try {
+          saveAlert(alert);
+          console.log(`[DEBUG] Saved follow-up alert for ${symbol}: ${lastAlert.changePerc.toFixed(2)}% -> ${alert.changePerc.toFixed(2)}% (diff: ${changeSinceLastAlert.toFixed(2)}%)`);
+        } catch (error) {
+          console.error(`[ERROR] Failed to save follow-up alert for ${symbol}:`, error);
+        }
       }
     }
   }
