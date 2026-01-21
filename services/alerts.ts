@@ -52,25 +52,9 @@ export async function checkAndRecordPrices(): Promise<void> {
   }
 }
 
-// Check if markets are in trading hours (pre-market, regular, or after-hours)
-function isMarketTradingHours(): boolean {
-  const now = new Date();
-  const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const hour = etTime.getHours();
-  
-  // Trading hours: 4:00 AM - 8:00 PM ET (pre-market, regular, after-hours)
-  // Closed: 8:00 PM - 4:00 AM ET
-  return hour >= 4 && hour < 20;
-}
-
 export function checkForAlerts(): Alert[] {
   const symbols = ["AAPL", "GOOGL", "NFLX", "MSFT", "AMZN", "PLTR", "NVDA", "META", "TSLA", "GC", "SI"];
   const alerts: Alert[] = [];
-  
-  // Skip alerts when markets are fully closed (8 PM - 4 AM ET)
-  if (!isMarketTradingHours()) {
-    return alerts;
-  }
 
   for (const symbol of symbols) {
     const snapshots = getSnapshotsForAlert(symbol);
