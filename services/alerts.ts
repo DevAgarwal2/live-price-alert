@@ -101,7 +101,7 @@ export function checkForAlerts(): Alert[] {
       // Round to 2 decimal places to avoid floating point precision issues
       const currentChangeRounded = Math.round(latest.changePerc * 100) / 100;
       const lastChangeRounded = Math.round(lastAlert.changePerc * 100) / 100;
-      const changeSinceLastAlert = Math.abs(currentChangeRounded - lastChangeRounded);
+      const changeSinceLastAlert = Math.round(Math.abs(currentChangeRounded - lastChangeRounded) * 100) / 100;
       
       console.log(`[DEBUG] ${symbol}: Current ${currentChangeRounded}% vs Last Alert ${lastChangeRounded}% = ${changeSinceLastAlert}% diff`);
       
