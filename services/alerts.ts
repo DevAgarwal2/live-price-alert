@@ -111,6 +111,9 @@ export function checkForAlerts(): Alert[] {
       alerts.push(directionAlert);
       saveAlert(directionAlert);
       console.log(`[🔄 DIRECTION] ${symbol} crossed ${currentDirection === 'UP' ? 'ABOVE' : 'BELOW'} yesterday's close: ${latest.changePerc.toFixed(2)}%`);
+    } else {
+      // No direction change - just monitoring
+      console.log(`[DEBUG] ${symbol}: Direction ${currentDirection} (${latest.changePerc >= 0 ? '+' : ''}${latest.changePerc.toFixed(2)}%) - no crossing`);
     }
     
     // Update direction tracking
